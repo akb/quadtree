@@ -1,10 +1,13 @@
 quadtree
 ========
 
-Quadtree implementation in Go.
+Point Quadtree implementation in Go.
 
-Quadtrees are used to store 2D points in a way which allows regions to be
-queried for their contents in O(log n) time.
+Point Quadtrees are used to store 2D points in a way which allows regions to be
+queried for their contents in O(log n) time. This implementation enforces a
+single-point per-node, however this limitation is not definitive of a
+quad-tree, it is just the design of this particular implementation. This may
+change in the future.
 
 Note: This implementation is NOT thread-safe
 
