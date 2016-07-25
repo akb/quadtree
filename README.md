@@ -6,6 +6,8 @@ Quadtree implementation in Go.
 Quadtrees are used to store 2D points in a way which allows regions to be
 queried for their contents in O(log n) time.
 
+Note: This implementation is NOT thread-safe
+
 Usage
 -----
 
