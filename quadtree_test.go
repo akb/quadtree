@@ -1,10 +1,42 @@
 package quadtree
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
 	"testing"
 )
+
+func TestBasicFunctionality(t *testing.T) {
+	// create a quadtree covering a 2000x2000 area
+	tree := NewQuadTreeNode(&AABB{0, 0, 1000, 1000})
+
+	// insert some points into the tree
+	tree.Insert(&Point2D{23, 42})
+	tree.Insert(&Point2D{6, 29})
+	tree.Insert(&Point2D{86, 14})
+	tree.Insert(&Point2D{35, 46})
+
+	// fetch a region of the tree
+	points := tree.Fetch(&AABB{30, 44, 10, 10})
+
+	if !containsPoint(&Point2D{23, 42}, points) {
+		t.Error("Result does not contain point (23, 42)")
+	}
+
+	if !containsPoint(&Point2D{35, 46}, points) {
+		t.Error("Result does not contain point(35, 46)")
+	}
+}
+
+func containsPoint(needle *Point2D, haystack []*Point2D) bool {
+	for _, point := range haystack {
+		if point.X == needle.X && point.Y == needle.Y {
+			return true
+		}
+	}
+	return false
+}
 
 func BenchmarkInsert100(b *testing.B)     { benchmarkInsert(100, b) }
 func BenchmarkInsert1000(b *testing.B)    { benchmarkInsert(1000, b) }

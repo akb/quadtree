@@ -58,10 +58,10 @@ func NewQuadTreeNode(boundary *AABB) *QuadTreeNode {
 // Fetch returns the points contained within the passed in boundary
 func (self *QuadTreeNode) Fetch(boundary *AABB) []*Point2D {
 	if self.Location != nil {
-		if self.Location.X >= boundary.X &&
-			self.Location.X < boundary.X+boundary.Width() &&
-			self.Location.Y >= boundary.Y &&
-			self.Location.Y < boundary.Y+boundary.Height() {
+		if self.Location.X >= boundary.X-boundary.HalfWidth &&
+			self.Location.X < boundary.X+boundary.HalfWidth &&
+			self.Location.Y >= boundary.Y-boundary.HalfHeight &&
+			self.Location.Y < boundary.Y+boundary.HalfHeight {
 			return []*Point2D{self.Location}
 		} else {
 			return []*Point2D{}
