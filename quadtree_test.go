@@ -1,7 +1,6 @@
 package quadtree
 
 import (
-	"fmt"
 	"math"
 	"math/rand"
 	"testing"
