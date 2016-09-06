@@ -6,9 +6,27 @@ import (
 	"testing"
 )
 
+type FlatStore struct {
+	Points []*Point2D
+}
+
+func (self *FlatStore) Insert(point *Point2D) {
+	self.Points = append(self.Points, point)
+}
+
+func (self *FlatStore) Fetch(boundary *AABB) []*Point2D {
+	points := []*Point2D{}
+	for _, point := range self.Points {
+		if boundary.Contains(point) {
+			points = append(points, point)
+		}
+	}
+	return points
+}
+
 func TestBasicFunctionality(t *testing.T) {
 	// create a quadtree covering a 2000x2000 area
-	tree := NewQuadTreeNode(&AABB{0, 0, 1000, 1000})
+	tree := NewQuadTreeNode(&AABB{0, 0, 1000, 1000}, 2)
 
 	// insert some points into the tree
 	tree.Insert(&Point2D{23, 42})
@@ -43,6 +61,12 @@ func BenchmarkInsert10000(b *testing.B)   { benchmarkInsert(10000, b) }
 func BenchmarkInsert100000(b *testing.B)  { benchmarkInsert(100000, b) }
 func BenchmarkInsert1000000(b *testing.B) { benchmarkInsert(1000000, b) }
 
+func BenchmarkInsertFlat100(b *testing.B)     { benchmarkInsertFlat(100, b) }
+func BenchmarkInsertFlat1000(b *testing.B)    { benchmarkInsertFlat(1000, b) }
+func BenchmarkInsertFlat10000(b *testing.B)   { benchmarkInsertFlat(10000, b) }
+func BenchmarkInsertFlat100000(b *testing.B)  { benchmarkInsertFlat(100000, b) }
+func BenchmarkInsertFlat1000000(b *testing.B) { benchmarkInsertFlat(1000000, b) }
+
 func benchmarkInsert(size int, b *testing.B) {
 	boundary := &AABB{0, 0, 1000, 1000}
 	tree := buildTree(boundary, size)
@@ -51,11 +75,25 @@ func benchmarkInsert(size int, b *testing.B) {
 	}
 }
 
+func benchmarkInsertFlat(size int, b *testing.B) {
+	boundary := &AABB{0, 0, 1000, 1000}
+	store := buildFlatStore(boundary, size)
+	for n := 0; n < b.N; n++ {
+		store.Insert(&Point2D{rand.Float64()*2000 - 1000, rand.Float64()*2000 - 1000})
+	}
+}
+
 func BenchmarkFetch100(b *testing.B)     { benchmarkFetch(100, b) }
 func BenchmarkFetch1000(b *testing.B)    { benchmarkFetch(1000, b) }
 func BenchmarkFetch10000(b *testing.B)   { benchmarkFetch(10000, b) }
 func BenchmarkFetch100000(b *testing.B)  { benchmarkFetch(100000, b) }
 func BenchmarkFetch1000000(b *testing.B) { benchmarkFetch(1000000, b) }
+
+func BenchmarkFetchFlat100(b *testing.B)     { benchmarkFetchFlat(100, b) }
+func BenchmarkFetchFlat1000(b *testing.B)    { benchmarkFetchFlat(1000, b) }
+func BenchmarkFetchFlat10000(b *testing.B)   { benchmarkFetchFlat(10000, b) }
+func BenchmarkFetchFlat100000(b *testing.B)  { benchmarkFetchFlat(100000, b) }
+func BenchmarkFetchFlat1000000(b *testing.B) { benchmarkFetchFlat(1000000, b) }
 
 func benchmarkFetch(size int, b *testing.B) {
 	boundary := &AABB{0, 0, 1000, 1000}
@@ -71,8 +109,22 @@ func benchmarkFetch(size int, b *testing.B) {
 	}
 }
 
+func benchmarkFetchFlat(size int, b *testing.B) {
+	boundary := &AABB{0, 0, 1000, 1000}
+	store := buildFlatStore(boundary, size)
+
+	for n := 0; n < b.N; n++ {
+		store.Fetch(&AABB{
+			rand.Float64()*boundary.Width() - boundary.HalfWidth,
+			rand.Float64()*boundary.Height() - boundary.HalfHeight,
+			math.Min(rand.Float64()*boundary.Width()-boundary.HalfWidth, boundary.HalfWidth),
+			math.Min(rand.Float64()*boundary.Height()-boundary.HalfHeight, boundary.HalfHeight),
+		})
+	}
+}
+
 func buildTree(boundary *AABB, nodeCount int) *QuadTreeNode {
-	tree := NewQuadTreeNode(boundary)
+	tree := NewQuadTreeNode(boundary, 4)
 
 	for n := 0; n < nodeCount; n++ {
 		tree.Insert(&Point2D{
@@ -82,4 +134,17 @@ func buildTree(boundary *AABB, nodeCount int) *QuadTreeNode {
 	}
 
 	return tree
+}
+
+func buildFlatStore(boundary *AABB, nodeCount int) *FlatStore {
+	store := &FlatStore{}
+
+	for n := 0; n < nodeCount; n++ {
+		store.Insert(&Point2D{
+			rand.Float64()*boundary.Width() - boundary.HalfWidth,
+			rand.Float64()*boundary.Height() - boundary.HalfHeight,
+		})
+	}
+
+	return store
 }

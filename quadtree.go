@@ -46,26 +46,29 @@ func (self AABB) Intersects(boundary *AABB) bool {
 // the children of this node.
 type QuadTreeNode struct {
 	*AABB
-	Location  *Point2D
+	Points    []*Point2D
 	Quadrants [4]*QuadTreeNode
+	Capacity  int
 }
 
 // NewQuadTreeNode returns an empty QuadTreeNode for the passed-in boundary
-func NewQuadTreeNode(boundary *AABB) *QuadTreeNode {
-	return &QuadTreeNode{boundary, nil, [4]*QuadTreeNode{}}
+func NewQuadTreeNode(boundary *AABB, capacity int) *QuadTreeNode {
+	return &QuadTreeNode{boundary, []*Point2D{}, [4]*QuadTreeNode{}, capacity}
 }
 
 // Fetch returns the points contained within the passed in boundary
 func (self *QuadTreeNode) Fetch(boundary *AABB) []*Point2D {
-	if self.Location != nil {
-		if self.Location.X >= boundary.X-boundary.HalfWidth &&
-			self.Location.X < boundary.X+boundary.HalfWidth &&
-			self.Location.Y >= boundary.Y-boundary.HalfHeight &&
-			self.Location.Y < boundary.Y+boundary.HalfHeight {
-			return []*Point2D{self.Location}
-		} else {
-			return []*Point2D{}
+	if len(self.Points) > 0 {
+		points := []*Point2D{}
+		for _, point := range self.Points {
+			if point.X >= boundary.X-boundary.HalfWidth &&
+				point.X < boundary.X+boundary.HalfWidth &&
+				point.Y >= boundary.Y-boundary.HalfHeight &&
+				point.Y < boundary.Y+boundary.HalfHeight {
+				points = append(points, point)
+			}
 		}
+		return points
 	}
 
 	if self.Quadrants[0] == nil {
@@ -88,17 +91,20 @@ func (self *QuadTreeNode) Fetch(boundary *AABB) []*Point2D {
 func (self *QuadTreeNode) Insert(point *Point2D) {
 	if point == nil || !self.Contains(point) {
 		return
-	} else if self.Location == nil && self.Quadrants[0] == nil {
-		self.Location = point
-	} else if self.Location == nil && self.Quadrants[0] != nil {
-		self.update(point)
-	} else if self.Location != nil && self.Quadrants[0] == nil {
-		self.subdivide()
-		self.update(self.Location)
-		self.Location = nil
+	} else if self.Quadrants[0] == nil {
+		count := len(self.Points)
+		if count < self.Capacity {
+			self.Points = append(self.Points, point)
+		} else if count == self.Capacity {
+			self.subdivide()
+			self.update(point)
+		} else {
+			panic("Length of self.Points is less than zero or greater than capacity")
+		}
+	} else if len(self.Points) == 0 && self.Quadrants[0] != nil {
 		self.update(point)
 	} else {
-		panic("This should never run. Node has been subdivided and is not null")
+		panic("Node has been subdivided and is not null")
 	}
 }
 
@@ -106,13 +112,17 @@ func (self *QuadTreeNode) subdivide() {
 	width := self.HalfHeight / 2
 	height := self.HalfHeight / 2
 	self.Quadrants[NorthWest] = NewQuadTreeNode(
-		&AABB{self.X - width, self.Y + height, width, height})
+		&AABB{self.X - width, self.Y + height, width, height}, self.Capacity)
 	self.Quadrants[NorthEast] = NewQuadTreeNode(
-		&AABB{self.X + width, self.Y + height, width, height})
+		&AABB{self.X + width, self.Y + height, width, height}, self.Capacity)
 	self.Quadrants[SouthWest] = NewQuadTreeNode(
-		&AABB{self.X - width, self.Y - height, width, height})
+		&AABB{self.X - width, self.Y - height, width, height}, self.Capacity)
 	self.Quadrants[SouthEast] = NewQuadTreeNode(
-		&AABB{self.X + width, self.Y - height, width, height})
+		&AABB{self.X + width, self.Y - height, width, height}, self.Capacity)
+	for _, point := range self.Points {
+		self.update(point)
+	}
+	self.Points = []*Point2D{}
 }
 
 func (self *QuadTreeNode) update(point *Point2D) {
